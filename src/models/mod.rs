@@ -22,3 +22,10 @@ pub struct Page {
 pub struct BodyItem {
     pub title: String,
 }
+
+
+#[derive(Deserialize)]  // JSON 요청을 받기 위해 필요
+pub struct CreateUserRequest {
+    pub name: String,
+    pub email: String,
+}

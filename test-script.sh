@@ -27,6 +27,14 @@ echo "=== Testing get_axum_users ==="
 curl http://localhost:3000/axum-users | jq
 echo -e "\n"
 
+# echo "=== Testing get_app_state ==="
+# curl http://localhost:3000/get_app_state | jq
+# echo -e "\n"
+
+echo "=== Testing get_app_state ==="
+curl http://localhost:3000/get_app_state -H "X-Admin-API-Key: 2309oijq2309rafjkq230r980afj" | jq
+echo -e "\n"
+
 # curl -X POST http://localhost:3000/create-user
 
 # curl http://localhost:3000/users | jq

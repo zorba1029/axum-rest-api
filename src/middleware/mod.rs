@@ -1,11 +1,33 @@
 use axum::{
     body::Body,
-    http::Request,
+    extract::State,
+    http::{Request, StatusCode},
     middleware::Next,
     response::IntoResponse,
 };
 use std::time::Instant;
+use std::sync::Arc;
+use crate::AppState;
 
+
+pub async fn auth_middleware(
+    State(app_state): State<Arc<AppState>>,
+    req: Request<Body>,
+    next: Next<Body>,
+) -> impl IntoResponse {
+    let auth_header = req.headers()
+        .get("X-Admin-API-Key")
+        .and_then(|header| header.to_str().ok());
+
+    match auth_header {
+        Some(key) if key == app_state.admin_api_key => {
+            next.run(req).await
+        },
+        _ => {
+            (StatusCode::UNAUTHORIZED, "Invalid API Key").into_response()
+        }
+    }
+}
 
 pub async fn logging_middleware(req: Request<Body>, next: Next<Body>) -> impl IntoResponse {
     let start = Instant::now();
@@ -33,3 +55,4 @@ pub async fn logging_middleware(req: Request<Body>, next: Next<Body>) -> impl In
 
     response
 }
+
