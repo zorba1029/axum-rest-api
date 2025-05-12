@@ -1,1 +1,19 @@
-/target
+# Rust 관련
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# 환경 설정
+.env
+.env.local
+
+# IDE 관련
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS 관련
+.DS_Store
+.git_access_token
+
