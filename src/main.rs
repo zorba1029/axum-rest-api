@@ -1,5 +1,4 @@
 use axum::{ Router, Server, routing::{delete, get, post} };
-
 use axum_rest_api::{handlers, middleware, init_app};
 
 //--- tokio main ----------------
@@ -42,9 +41,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Server::bind(&addr.parse()?)
         .serve(app)
+        .with_graceful_shutdown(shutdown_signal())
         .await?;
     
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    println!("서버가 성공적으로 종료되었습니다."); 
+
     Ok(())
+}
+
+async fn shutdown_signal() {
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install CTRL+C signal handler");
+    println!("SIGINT 신호 수신, 서버 종료 시작...");
 }
 
 // --------------------
