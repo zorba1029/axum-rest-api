@@ -17,10 +17,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let admin_routes = Router::new()
         .route("/get_app_state", get(handlers::get_app_state)
-        .route_layer(axum::middleware::from_fn_with_state(
-            config.app_state.clone(),
-            middleware::auth_middleware,
-        ))
+            .route_layer(axum::middleware::from_fn_with_state(
+                config.app_state.clone(),
+                middleware::auth_middleware,
+            ))
     );
     let app = Router::new()
         .route("/", get(|| async { "hello, Rust!" }))
