@@ -15,6 +15,13 @@ use axum_rest_api::{handlers, middleware, init_app};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = init_app().await?;
 
+    let admin_routes = Router::new()
+        .route("/get_app_state", get(handlers::get_app_state)
+        .route_layer(axum::middleware::from_fn_with_state(
+            config.app_state.clone(),
+            middleware::auth_middleware,
+        ))
+    );
     let app = Router::new()
         .route("/", get(|| async { "hello, Rust!" }))
         .route("/create-user", post(handlers::create_user))
@@ -24,12 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/item/:id", get(handlers::show_item))
         .route("/add-item", post(handlers::add_item))
         .route("/delete-user/:id", delete(handlers::delete_user))
-        .route("/get_app_state", get(handlers::get_app_state)
-            .route_layer(axum::middleware::from_fn_with_state(
-                config.app_state.clone(),
-                middleware::auth_middleware,
-            ))
-        )
+        .nest("/admin", admin_routes)  //-- /admin 경로에 인증 적용
         .with_state(config.app_state.clone())
         .layer(axum::middleware::from_fn(middleware::logging_middleware))
         .layer(axum::extract::Extension(config.db_pool))
