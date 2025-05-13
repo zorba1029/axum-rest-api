@@ -1,30 +1,31 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct User {
     pub id: u64,
     pub name: String,
     pub email: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct UserItem {
     pub id: u64,
     pub name: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct Page {
     pub number: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct BodyItem {
     pub title: String,
 }
 
 
-#[derive(Deserialize)]  // JSON 요청을 받기 위해 필요
+#[derive(Deserialize, ToSchema)]
 pub struct CreateUserRequest {
     pub name: String,
     pub email: String,

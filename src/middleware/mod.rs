@@ -1,10 +1,11 @@
 use axum::{
     body::Body,
-    extract::State,
+    extract::{ConnectInfo, State},
     http::{Request, StatusCode},
     middleware::Next,
     response::IntoResponse,
 };
+use std::net::SocketAddr;
 use std::time::Instant;
 use std::sync::Arc;
 use crate::AppState;
@@ -13,7 +14,7 @@ use crate::AppState;
 pub async fn auth_middleware(
     State(app_state): State<Arc<AppState>>,
     req: Request<Body>,
-    next: Next<Body>,
+    next: Next,
 ) -> impl IntoResponse {
     let auth_header = req.headers()
         .get("X-Admin-API-Key")
@@ -29,19 +30,19 @@ pub async fn auth_middleware(
     }
 }
 
-pub async fn logging_middleware(req: Request<Body>, next: Next<Body>) -> impl IntoResponse {
+pub async fn logging_middleware(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    req: Request<Body>,
+    next: Next,
+) -> impl IntoResponse {
     let start = Instant::now();
 
     let client_ip = req
         .headers()
         .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok().map(String::from))
-        .or_else(|| {
-            req.extensions()
-                .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
-                .map(|addr| addr.0.ip().to_string())
-        })
-        .unwrap_or_else(|| "UNKNOWN".to_string());
+        .and_then(|v| v.to_str().ok())
+        .map(String::from)
+        .unwrap_or_else(|| addr.ip().to_string());
 
     let method = req.method().clone();
     let uri = req.uri().clone();

@@ -4,12 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = {version = "0.6.20", features = ["headers"]}
+axum = "0.7.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.68"
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.40.1", features = ["full"] }
 sqlx = { version = "0.7.2", features = ["runtime-tokio", "mysql"] }
 dotenvy = "0.15"
+utoipa = { version = "4.2.3", features = ["axum_extras", "chrono", "openapi_extensions", "time"] }
+utoipa-swagger-ui = { version = "7.1.0", features = ["axum"] }
+tower-http = { version = "0.5.2", features = ["fs"] }
 # signal-hook = "0.3.18"
 
 # [dev-dependencies]

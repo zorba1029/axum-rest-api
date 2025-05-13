@@ -4,6 +4,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+// use serde_json::{json, Value};
 use serde_json::json;
 use sqlx::{mysql::MySqlPool, Row};
 use crate::models::{User, UserItem, CreateUserRequest};
@@ -11,6 +12,13 @@ use crate::AppState;
 use std::sync::Arc;
 
 //-- 테스트 코드 ----------------
+#[utoipa::path(
+    post,
+    path = "/create-user",
+    responses(
+        (status = 201, description = "User created successfully", body = UserItem)
+    )
+)]
 pub async fn create_user() -> impl IntoResponse {
     Response::builder()
         .status(StatusCode::CREATED)
@@ -19,6 +27,15 @@ pub async fn create_user() -> impl IntoResponse {
 }
 
 //-- DB 연동 테스트 코드 ----------------
+#[utoipa::path(
+    post,
+    path = "/create-user-db",
+    request_body = CreateUserRequest,
+    responses(
+        (status = 201, description = "User created successfully in DB", body = serde_json::Value),
+        (status = 500, description = "Failed to create user", body = serde_json::Value)
+    )
+)]
 pub async fn create_user_db(
     Extension(db_pool): Extension<MySqlPool>,
     Json(user_data): Json<CreateUserRequest>,
@@ -47,6 +64,13 @@ pub async fn create_user_db(
         }
 }
 
+#[utoipa::path(
+    get,
+    path = "/users",
+    responses(
+        (status = 200, description = "List of users", body = Vec<User>)
+    )
+)]
 pub async fn list_users() -> impl IntoResponse {
     let users = vec![
         User {
@@ -64,6 +88,17 @@ pub async fn list_users() -> impl IntoResponse {
     Json(users)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/delete-user/{id}",
+    params(
+        ("id" = u64, Path, description = "User id to delete")
+    ),
+    responses(
+        (status = 200, description = "User deleted (placeholder response)", body = UserItem),
+        (status = 500, description = "Failed to delete user", body = String)
+    )
+)]
 pub async fn delete_user(Path(user_id): Path<u64>) -> Result<Json<UserItem>, impl IntoResponse> {
     match perform_delete_user(user_id).await {
         Ok(_) => Ok(Json(UserItem { 
@@ -86,6 +121,14 @@ async fn perform_delete_user(user_id: u64) -> Result<(), String> {
 }
 
 //-- DB 연동 테스트 코드 ----------------
+#[utoipa::path(
+    get,
+    path = "/axum-users",
+    responses(
+        (status = 200, description = "List of users from DB", body = Vec<User>),
+        (status = 500, description = "Failed to fetch users", body = String)
+    )
+)]
 pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl IntoResponse {
     let rows = match sqlx::query("SELECT id, name, email FROM axum_users")
         .fetch_all(&db_pool)
@@ -99,31 +142,42 @@ pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl Int
             }
         };
 
-    let axum_users: Vec<serde_json::Value> = rows
+    let axum_users: Vec<User> = rows
         .into_iter()
         .map(|row| {
-            json!({
-                "id": row.try_get::<i32, _>("id").unwrap_or_default(),
-                "name": row.try_get::<String, _>("name").unwrap_or_default(),
-                "email": row.try_get::<String, _>("email").unwrap_or_default(),
-            })
+            User {
+                id: row.try_get::<u64, _>("id").unwrap_or_default(),
+                name: row.try_get::<String, _>("name").unwrap_or_default(),
+                email: row.try_get::<String, _>("email").unwrap_or_default(),
+            }
         })
         .collect();
 
     (StatusCode::OK, Json(axum_users)).into_response()
 }
 
-pub async fn get_app_state(State(app_state): State<Arc<AppState>>) -> impl IntoResponse {
+#[utoipa::path(
+    get,
+    path = "/admin/get_app_state",
+    responses(
+        (status = 200, description = "Get App State", body = serde_json::Value)
+    ),
+    security(
+        ("ApiKeyAuth" = [])
+    )
+    // tags = ["Admin"]
+)]
+pub async fn get_app_state(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     (
         StatusCode::OK,
         Json(json!({
-            "db_name": app_state.db_name.clone(),
-            "db_user": app_state.db_user.clone(),
-            "db_host": app_state.db_host.clone(),
-            "db_port": app_state.db_port.clone(),
-            "db_user": app_state.db_user.clone(),
-            "server_host": app_state.server_host.clone(),
-            "server_port": app_state.server_port.clone(),
+            "db_name": state.db_name.clone(),
+            "db_user": state.db_user.clone(),
+            "db_host": state.db_host.clone(),
+            "db_port": state.db_port.clone(),
+            "db_user": state.db_user.clone(),
+            "server_host": state.server_host.clone(),
+            "server_port": state.server_port.clone(),
         }))
     )
 }

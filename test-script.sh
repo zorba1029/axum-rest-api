@@ -27,11 +27,18 @@ echo "=== Testing get_axum_users ==="
 curl http://localhost:3000/axum-users | jq
 echo -e "\n"
 
-# echo "=== Testing get_app_state ==="
-# curl http://localhost:3000/get_app_state | jq
+echo "=== Testing /create-user-db: create a USER and save into DB ==="
+curl -X 'POST' \
+  'http://localhost:3000/create-user-db' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "email": "zorbahuse@gmail.com",
+  "name": "Heung-Mook CHOI"
+}'
 # echo -e "\n"
 
-echo "=== Testing get_app_state ==="
+echo "=== Testing get_app_state with auth-key ==="
 curl http://localhost:3000/admin/get_app_state -H "X-Admin-API-Key: 2309oijq2309rafjkq230r980afj" | jq
 echo -e "\n"
 
