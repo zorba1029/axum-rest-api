@@ -4,12 +4,10 @@ use axum::{
     routing::{delete, get, post}
 };
 use axum_rest_api::{handlers, middleware, init_app, models};
-// Arc 추가
 use utoipa::OpenApi;
 use utoipa::Modify; // Modify 트레잇 임포트
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}; // ApiKeyValue 임포트 확인
-use utoipa_swagger_ui::SwaggerUi; // 다시 활성화
-// use tower_http::services::ServeDir; // 일단 주석
+use utoipa_swagger_ui::SwaggerUi;
 
 struct SecurityAddon;
 
@@ -44,7 +42,6 @@ impl Modify for SecurityAddon {
             models::Page,
             models::BodyItem,
             models::CreateUserRequest,
-            // Item 모델이 있다면 추가: models::Item
         )
         // security_schemes 직접 정의 제거
     ),
@@ -84,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_state(shared_state.clone()); // admin_routes에도 상태 적용
 
-    // SwaggerUi 객체를 생성 (별도 변수 제거)
+    // SwaggerUi 객체를 생성 
     let swagger_route: SwaggerUi = SwaggerUi::new("/swagger-ui")
         .url("/api-docs/openapi.json", ApiDoc::openapi())
         .into();
@@ -111,11 +108,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // app을 ConnectInfo를 제공하는 서비스로 변환
     let app_with_connect_info = app.into_make_service_with_connect_info::<std::net::SocketAddr>();
 
-    axum::serve(listener, app_with_connect_info) // 수정된 서비스 사용
+    // 수정된 서비스 사용
+    axum::serve(listener, app_with_connect_info) 
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await; // 이 부분은 테스트용으로 유지
+    // 이 부분은 테스트용으로 유지
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await; 
     println!("서버가 성공적으로 종료되었습니다.");
 
     Ok(())
