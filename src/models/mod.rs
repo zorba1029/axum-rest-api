@@ -3,14 +3,14 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct User {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
     pub email: String,
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct UserItem {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
 }
 

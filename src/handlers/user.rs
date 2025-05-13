@@ -92,14 +92,15 @@ pub async fn list_users() -> impl IntoResponse {
     delete,
     path = "/delete-user/{id}",
     params(
-        ("id" = u64, Path, description = "User id to delete")
+        ("id" = i32, Path, description = "User id to delete")
     ),
     responses(
         (status = 200, description = "User deleted (placeholder response)", body = UserItem),
         (status = 500, description = "Failed to delete user", body = String)
     )
+    // tags = ["User (Test)"]
 )]
-pub async fn delete_user(Path(user_id): Path<u64>) -> Result<Json<UserItem>, impl IntoResponse> {
+pub async fn delete_user(Path(user_id): Path<i32>) -> Result<Json<UserItem>, impl IntoResponse> {
     match perform_delete_user(user_id).await {
         Ok(_) => Ok(Json(UserItem { 
             id: user_id,
@@ -112,7 +113,7 @@ pub async fn delete_user(Path(user_id): Path<u64>) -> Result<Json<UserItem>, imp
     }
 }
 
-async fn perform_delete_user(user_id: u64) -> Result<(), String> {
+async fn perform_delete_user(user_id: i32) -> Result<(), String> {
     if user_id == 1 {
         Err("User Can NOT be deleted".to_string())
     } else {
@@ -146,7 +147,7 @@ pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl Int
         .into_iter()
         .map(|row| {
             User {
-                id: row.try_get::<u64, _>("id").unwrap_or_default(),
+                id: row.try_get::<i32, _>("id").unwrap_or_default(),
                 name: row.try_get::<String, _>("name").unwrap_or_default(),
                 email: row.try_get::<String, _>("email").unwrap_or_default(),
             }
