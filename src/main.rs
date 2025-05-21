@@ -102,8 +102,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(shared_state); // 최종적으로 전체 라우터에 상태 적용
 
     let addr_str = format!("{}:{}", config.host, config.port);
-    let listener = tokio::net::TcpListener::bind(&addr_str).await?; // TcpListener 사용
-    println!("서버가 http://{} 에서 실행 중입니다", listener.local_addr()?); // listener.local_addr() 사용
+    let listener = tokio::net::TcpListener::bind(&addr_str).await?; 
+    println!("서버가 http://{} 에서 실행 중입니다", listener.local_addr()?); 
 
     // app을 ConnectInfo를 제공하는 서비스로 변환
     let app_with_connect_info = app.into_make_service_with_connect_info::<std::net::SocketAddr>();

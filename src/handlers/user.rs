@@ -131,7 +131,32 @@ async fn perform_delete_user(user_id: i32) -> Result<(), String> {
     )
 )]
 pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl IntoResponse {
-    let rows = match sqlx::query("SELECT id, name, email FROM axum_users")
+    // let rows = match sqlx::query("SELECT id, name, email FROM axum_users")
+    //     .fetch_all(&db_pool)
+    //     .await {
+    //         Ok(rows) => rows,
+    //         Err(_) => {
+    //             return (
+    //                 StatusCode::INTERNAL_SERVER_ERROR,
+    //                 "Failed to fetch users from DB",
+    //             ).into_response();
+    //         }
+    //     };
+
+    // let axum_users: Vec<User> = rows
+    //     .into_iter()
+    //     .map(|row| {
+    //         User {
+    //             id: row.try_get::<i32, _>("id").unwrap_or_default(),
+    //             name: row.try_get::<String, _>("name").unwrap_or_default(),
+    //             email: row.try_get::<String, _>("email").unwrap_or_default(),
+    //         }
+    //     })
+    //     .collect();
+    
+    // (StatusCode::OK, Json(axum_users)).into_response()
+
+    let axum_users: Vec<User> = match sqlx::query("SELECT id, name, email FROM axum_users")
         .fetch_all(&db_pool)
         .await {
             Ok(rows) => rows,
@@ -141,9 +166,7 @@ pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl Int
                     "Failed to fetch users from DB",
                 ).into_response();
             }
-        };
-
-    let axum_users: Vec<User> = rows
+        }
         .into_iter()
         .map(|row| {
             User {
@@ -153,6 +176,10 @@ pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl Int
             }
         })
         .collect();
+
+    // axum_users.iter().for_each(|user| {
+    //     println!("axum_users: {:?}", user);
+    // });
 
     (StatusCode::OK, Json(axum_users)).into_response()
 }
