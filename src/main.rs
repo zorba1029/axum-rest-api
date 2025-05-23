@@ -70,16 +70,15 @@ struct ApiDoc;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = init_app().await?;
-    let shared_state = config.app_state.clone(); // 상태 복제
+    let shared_state = config.app_state.clone(); 
 
     let admin_routes = Router::new()
         .route("/get_app_state", get(handlers::get_app_state)
             .route_layer(axum::middleware::from_fn_with_state(
-                shared_state.clone(), // 복제된 상태 사용
+                shared_state.clone(),
                 middleware::auth_middleware,
             ))
-        )
-        .with_state(shared_state.clone()); // admin_routes에도 상태 적용
+        ); // .with_state(shared_state.clone()) 제거됨
 
     // SwaggerUi 객체를 생성 
     let swagger_route: SwaggerUi = SwaggerUi::new("/swagger-ui")
