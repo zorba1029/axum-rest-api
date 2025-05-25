@@ -1,5 +1,6 @@
 use axum::extract::{Json, Path, Query};
 use crate::models::{Page, BodyItem};
+use crate::AppError;
 
 #[utoipa::path(
     get,
@@ -13,8 +14,20 @@ use crate::models::{Page, BodyItem};
     )
     // tags = ["Item"] // 주석 처리
 )]
-pub async fn show_item(Path(id): Path<i32>, Query(params): Query<Page>) -> String {
-    format!("Item ID: {}, Page Number: {}", id, params.number)
+pub async fn show_item(Path(id): Path<i32>, Query(params): Query<Page>) -> Result<String, AppError> {
+    // format!("Item ID: {}, Page Number: {}", id, params.number)
+    match find_item(id).await {
+        Ok(_) => Ok(format!("Item ID: {}, Page Number: {}", id, params.number)),
+        Err(e) => Err(AppError::InvalidInput(id, e.to_string())),
+    }
+}
+
+async fn find_item(id: i32) -> Result<(), String> {
+    if id == 1 {
+        Err("Item Not Found".to_string())
+    } else {
+        Ok(())
+    }
 }
 
 #[utoipa::path(

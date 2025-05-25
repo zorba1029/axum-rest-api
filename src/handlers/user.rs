@@ -10,6 +10,7 @@ use sqlx::{mysql::MySqlPool, Row};
 use crate::models::{User, UserItem, CreateUserRequest};
 use crate::AppState;
 use std::sync::Arc;
+use crate::AppError;
 
 //-- 테스트 코드 ----------------
 #[utoipa::path(
@@ -39,13 +40,30 @@ pub async fn create_user() -> impl IntoResponse {
 pub async fn create_user_db(
     Extension(db_pool): Extension<MySqlPool>,
     Json(user_data): Json<CreateUserRequest>,
-) -> impl IntoResponse {
+// ) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     match sqlx::query("INSERT INTO axum_users (name, email) VALUES (?, ?)")
         .bind(&user_data.name)
         .bind(&user_data.email)
         .execute(&db_pool)
         .await {
-            Ok(_) => (
+            // Ok(_) => (
+            //     StatusCode::CREATED,
+            //     Json(json!({
+            //         "message": "User Created Successfully",
+            //         "user" : {
+            //             "name": user_data.name,
+            //             "email": user_data.email,
+            //         }
+            //     }))
+            // ).into_response(),
+            // Err(e) => (
+            //     StatusCode::INTERNAL_SERVER_ERROR,
+            //     Json(json!({
+            //         "error": format!("Failed to create user: {}", e)
+            //     }))
+            // ).into_response(),
+            Ok(_) => Ok((
                 StatusCode::CREATED,
                 Json(json!({
                     "message": "User Created Successfully",
@@ -54,13 +72,11 @@ pub async fn create_user_db(
                         "email": user_data.email,
                     }
                 }))
-            ).into_response(),
-            Err(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "error": format!("Failed to create user: {}", e)
-                }))
-            ).into_response(),
+            ).into_response()),
+            Err(e) => Err(AppError::InternalServerError(format!(
+                "Failed to create user - {}", 
+                e
+            ))),
         }
 }
 
@@ -100,16 +116,18 @@ pub async fn list_users() -> impl IntoResponse {
     )
     // tags = ["User (Test)"]
 )]
-pub async fn delete_user(Path(user_id): Path<i32>) -> Result<Json<UserItem>, impl IntoResponse> {
+// pub async fn delete_user(Path(user_id): Path<i32>) -> Result<Json<UserItem>, impl IntoResponse> {
+pub async fn delete_user(Path(user_id): Path<i32>) -> Result<Json<UserItem>, AppError> {
     match perform_delete_user(user_id).await {
         Ok(_) => Ok(Json(UserItem { 
             id: user_id,
             name: "".to_string(),
         })),
-        Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to delete user: {}", e),
-        )),
+        // Err(e) => Err((
+        //     StatusCode::INTERNAL_SERVER_ERROR,
+        //     format!("Failed to delete user: {}", e),
+        // )),
+        Err(e) => Err(AppError::UserNotFound(user_id, e.to_string())),
     }
 }
 
@@ -130,7 +148,8 @@ async fn perform_delete_user(user_id: i32) -> Result<(), String> {
         (status = 500, description = "Failed to fetch users", body = String)
     )
 )]
-pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl IntoResponse {
+// pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl IntoResponse {
+pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> Result<impl IntoResponse, AppError> {
     // let rows = match sqlx::query("SELECT id, name, email FROM axum_users")
     //     .fetch_all(&db_pool)
     //     .await {
@@ -156,32 +175,29 @@ pub async fn list_users_db(Extension(db_pool): Extension<MySqlPool>) -> impl Int
     
     // (StatusCode::OK, Json(axum_users)).into_response()
 
-    let axum_users: Vec<User> = match sqlx::query("SELECT id, name, email FROM axum_users")
+    let result = sqlx::query("SELECT id, name, email FROM axum_users")
         .fetch_all(&db_pool)
-        .await {
-            Ok(rows) => rows,
-            Err(_) => {
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to fetch users from DB",
-                ).into_response();
-            }
+        .await;
+
+    match result {
+        Ok(rows) => {
+            let axum_users: Vec<User> = rows
+                .into_iter()
+                .map(|row| {
+                    User {
+                        id: row.try_get::<i32, _>("id").unwrap_or_default(),
+                        name: row.try_get::<String, _>("name").unwrap_or_default(),
+                        email: row.try_get::<String, _>("email").unwrap_or_default(),
+                    }
+                })
+                .collect();
+            Ok((StatusCode::OK, Json(axum_users)).into_response())
         }
-        .into_iter()
-        .map(|row| {
-            User {
-                id: row.try_get::<i32, _>("id").unwrap_or_default(),
-                name: row.try_get::<String, _>("name").unwrap_or_default(),
-                email: row.try_get::<String, _>("email").unwrap_or_default(),
-            }
-        })
-        .collect();
-
-    // axum_users.iter().for_each(|user| {
-    //     println!("axum_users: {:?}", user);
-    // });
-
-    (StatusCode::OK, Json(axum_users)).into_response()
+        Err(e) => Err(AppError::InternalServerError(format!(
+            "Failed to fetch users from DB - {}",
+            e
+        ))),
+    }
 }
 
 #[utoipa::path(
